@@ -1,0 +1,83 @@
+version: "3.7"
+services:
+
+  nginx:
+    image: nginx:alpine
+    container_name: phpdock-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - app
+
+  php:
+    build:
+      args:
+        user: www
+        uid: 1000
+      context: ./docker/php
+      dockerfile: Dockerfile
+    # image: laravel-image
+    container_name: phpdock-php
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      # - ./docker/php/ini/:/usr/local/etc/php/
+      # - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app  
+    # expose:
+    #   - 9000  
+    # environment:
+    #   XDEBUG_CONFIG: remote_host=10.254.254.254
+
+  # db:
+  #   image: mysql:5.7
+  #   container_name: phpdock-db
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_DATABASE: ${DB_DATABASE}
+  #     MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+  #     MYSQL_PASSWORD: ${DB_PASSWORD}
+  #     MYSQL_USER: ${DB_USERNAME}
+  #     SERVICE_TAGS: dev
+  #     SERVICE_NAME: mysql
+  #   ports:
+  #     - "3307:3306"  
+  #   volumes:
+  #     - ./docker/mysql:/docker-entrypoint-initdb.d
+  #   networks:
+  #     - app   
+      
+  mssql:
+    build: ./docker/mssql
+    hostname: 'mssql'
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: Admin@12345
+    ports:
+      - 14331:1433
+    volumes:
+      - ./docker/mssql/data:/var/opt/mssql 
+    networks:
+      - app  
+
+  redis:
+      image: redis:alpine
+      container_name: phpdock-redis
+      command: redis-server --appendonly yes
+      volumes:
+      - ./docker/redis/data/redis:/data
+      ports:
+        - "63791:6379"
+      networks:
+      - app    
+
+networks:
+  app:
+    driver: bridge    
+      
